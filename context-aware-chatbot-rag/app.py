@@ -130,11 +130,64 @@ def initialize_rag_pipeline():
                 self.retriever = retriever
                 self.memory = memory
             
+            def calculate_relevance_score(self, query: str, retrieved_docs: list) -> float:
+                """Calculate relevance score between query and documents (0-1)"""
+                query_words = set(query.lower().split())
+                total_matches = 0
+                
+                for doc in retrieved_docs:
+                    doc_words = set(doc["content"].lower().split())
+                    matches = len(query_words & doc_words)
+                    total_matches += matches
+                
+                # Normalize by query length and number of docs
+                max_possible = len(query_words) * len(retrieved_docs)
+                if max_possible == 0:
+                    return 0.0
+                
+                relevance_score = min(1.0, total_matches / max_possible)
+                return relevance_score
+            
+            def is_out_of_scope(self, query: str, retrieved_docs: list) -> bool:
+                """Determine if query is out of scope (low relevance)"""
+                relevance = self.calculate_relevance_score(query, retrieved_docs)
+                # If relevance < 0.15 (15%), consider it out of scope
+                return relevance < 0.15
+            
             def generate_response(self, query: str) -> Dict:
                 """Generate response using retrieval + template"""
                 retrieved_docs = self.retriever.retrieve(query, k=3)
                 
-                # Build context from retrieved documents
+                # Check if query is out of scope
+                if self.is_out_of_scope(query, retrieved_docs):
+                    response = f"""❌ **Out of Scope Question**
+
+I don't have information about **"{query}"** in my knowledge base.
+
+**My Knowledge Base Contains:**
+- 📚 LangChain framework and its capabilities
+- 🔄 Retrieval-Augmented Generation (RAG) concepts
+- 🗄️ Vector databases and FAISS
+- 🧬 Sentence Transformers and embeddings
+
+**Try asking me about:**
+- What is LangChain?
+- How does RAG work?
+- What are vector databases?
+- Tell me about embeddings
+- Explain semantic search"""
+                    
+                    # Store in memory
+                    self.memory.add_message("user", query)
+                    self.memory.add_message("assistant", response)
+                    
+                    return {
+                        "response": response,
+                        "source_documents": [],
+                        "is_out_of_scope": True
+                    }
+                
+                # Build context from retrieved documents (in scope)
                 context = "\n\n".join([f"📄 [{i+1}] {doc['content'][:200]}..." for i, doc in enumerate(retrieved_docs)])
                 
                 # Simple template-based response generation
@@ -157,7 +210,8 @@ def initialize_rag_pipeline():
                 
                 return {
                     "response": response,
-                    "source_documents": [doc["content"] for doc in retrieved_docs]
+                    "source_documents": [doc["content"] for doc in retrieved_docs],
+                    "is_out_of_scope": False
                 }
         
         # Initialize RAG chain

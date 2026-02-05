@@ -27,74 +27,86 @@ if "rag_chain" not in st.session_state:
     st.session_state.rag_chain = None
 
 def initialize_rag_pipeline():
-    """Initialize lightweight RAG pipeline using only FAISS and embeddings (no torch needed)"""
+    """Initialize lightweight RAG pipeline using keyword-based retrieval (no torch/embeddings needed)"""
     if st.session_state.rag_initialized:
         return
     
     st.session_state.rag_initialized = True
     
     try:
-        # Import only CPU-friendly libraries
-        st.write("📦 Loading libraries...")
-        from langchain_text_splitters import RecursiveCharacterTextSplitter
-        from langchain_huggingface import HuggingFaceEmbeddings
-        from langchain_community.vectorstores import FAISS
-        st.write("✓ Libraries loaded")
+        st.write("📦 Initializing RAG pipeline...")
         
         # Sample documents
         sample_documents = [
-            """LangChain is a framework for developing applications powered by language models. 
-            It enables applications that are data-aware and agentic, allowing them to interact with 
-            their environment and use external tools for computation and information retrieval.""",
-            
-            """Retrieval-Augmented Generation (RAG) combines retrieval and generation capabilities. 
-            It retrieves relevant documents from a knowledge base and uses them to augment the prompt 
-            for better, more contextual responses from language models.""",
-            
-            """Vector databases like FAISS store embeddings of documents, enabling semantic search. 
-            When a user query is converted to embeddings, the database finds similar documents 
-            based on vector similarity, which is faster than traditional keyword matching.""",
-            
-            """Sentence Transformers are pre-trained models that encode text into dense vector representations. 
-            These embeddings capture semantic meaning, allowing documents with similar meaning to have 
-            similar vectors regardless of exact wording."""
+            {
+                "id": 0,
+                "content": """LangChain is a framework for developing applications powered by language models. 
+                It enables applications that are data-aware and agentic, allowing them to interact with 
+                their environment and use external tools for computation and information retrieval."""
+            },
+            {
+                "id": 1,
+                "content": """Retrieval-Augmented Generation (RAG) combines retrieval and generation capabilities. 
+                It retrieves relevant documents from a knowledge base and uses them to augment the prompt 
+                for better, more contextual responses from language models."""
+            },
+            {
+                "id": 2,
+                "content": """Vector databases like FAISS store embeddings of documents, enabling semantic search. 
+                When a user query is converted to embeddings, the database finds similar documents 
+                based on vector similarity, which is faster than traditional keyword matching."""
+            },
+            {
+                "id": 3,
+                "content": """Sentence Transformers are pre-trained models that encode text into dense vector representations. 
+                These embeddings capture semantic meaning, allowing documents with similar meaning to have 
+                similar vectors regardless of exact wording."""
+            }
         ]
         
-        # 1. Create text splitter
-        st.write("📄 Creating text splitter...")
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=300,
-            chunk_overlap=50,
-            separators=["\n\n", "\n", " ", ""]
-        )
+        st.write("✓ Loaded 4 documents")
         
-        # 2. Split documents
-        st.write("✂️ Splitting documents...")
-        document_chunks = text_splitter.create_documents(sample_documents)
-        st.write(f"✓ Created {len(document_chunks)} document chunks")
+        # Simple keyword-based retrieval (no embeddings needed!)
+        class SimpleRAGRetriever:
+            def __init__(self, documents):
+                self.documents = documents
+                # Create keyword index
+                self.keywords = {}
+                for doc in documents:
+                    words = doc["content"].lower().split()
+                    for word in words:
+                        if word not in self.keywords:
+                            self.keywords[word] = []
+                        self.keywords[word].append(doc["id"])
+            
+            def retrieve(self, query: str, k: int = 3) -> list:
+                """Retrieve relevant documents based on keyword matching"""
+                query_words = query.lower().split()
+                doc_scores = {}
+                
+                # Score each document
+                for doc in self.documents:
+                    score = 0
+                    doc_content = doc["content"].lower()
+                    for word in query_words:
+                        score += doc_content.count(word)
+                    if score > 0:
+                        doc_scores[doc["id"]] = (score, doc)
+                
+                # Return top-k documents
+                if not doc_scores:
+                    # If no keyword match, return first k documents
+                    return self.documents[:k]
+                
+                sorted_docs = sorted(doc_scores.values(), key=lambda x: x[0], reverse=True)
+                return [doc for score, doc in sorted_docs[:k]]
         
-        # 3. Initialize embeddings (CPU-only)
-        st.write("🧠 Loading embedding model (sentence-transformers)...")
-        embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
-        st.write("✓ Embeddings loaded")
+        st.write("✓ Created keyword retriever")
         
-        # 4. Create FAISS vector store
-        st.write("🔨 Creating FAISS vector store...")
-        vector_store = FAISS.from_documents(document_chunks, embeddings)
-        st.write("✓ Vector store created")
+        # Initialize retriever
+        retriever = SimpleRAGRetriever(sample_documents)
         
-        # 5. Create retriever
-        st.write("🔍 Creating retriever...")
-        retriever = vector_store.as_retriever(
-            search_type="similarity",
-            search_kwargs={"k": 3}
-        )
-        st.write("✓ Retriever created")
-        
-        # 6. Initialize conversation memory
-        st.write("💾 Setting up conversation memory...")
+        # Initialize conversation memory
         class ConversationMemory:
             def __init__(self, memory_key: str = "chat_history"):
                 self.memory_key = memory_key
@@ -112,24 +124,18 @@ def initialize_rag_pipeline():
         memory = ConversationMemory(memory_key="chat_history")
         st.write("✓ Memory initialized")
         
-        # 7. Lightweight RAG Chain (no LLM, just retrieval + templates)
-        st.write("🤖 Creating RAG chain...")
+        # Lightweight RAG Chain
         class LightweightRAGChain:
             def __init__(self, retriever, memory):
                 self.retriever = retriever
                 self.memory = memory
             
-            def retrieve_documents(self, query: str) -> List[str]:
-                """Retrieve relevant documents for query"""
-                docs = self.retriever.invoke(query)
-                return [doc.page_content for doc in docs]
-            
             def generate_response(self, query: str) -> Dict:
-                """Generate response using retrieval + template (no heavy LLM)"""
-                retrieved_docs = self.retrieve_documents(query)
+                """Generate response using retrieval + template"""
+                retrieved_docs = self.retriever.retrieve(query, k=3)
                 
                 # Build context from retrieved documents
-                context = "\n\n".join([f"📄 [{i+1}] {doc[:200]}..." for i, doc in enumerate(retrieved_docs)])
+                context = "\n\n".join([f"📄 [{i+1}] {doc['content'][:200]}..." for i, doc in enumerate(retrieved_docs)])
                 
                 # Simple template-based response generation
                 query_lower = query.lower()
@@ -143,7 +149,7 @@ def initialize_rag_pipeline():
                 elif any(word in query_lower for word in ["transformer", "embedding", "representation"]):
                     response = f"Based on the knowledge base:\n\n{context}\n\n**Answer:** Sentence Transformers create dense vector representations (embeddings) that capture semantic meaning. Documents with similar meaning will have similar vectors, enabling semantic search and understanding."
                 else:
-                    response = f"Based on the knowledge base:\n\n{context}\n\n**Answer:** Based on the retrieved documents above, here's what I found relevant to your question: {query}"
+                    response = f"Based on the knowledge base:\n\n{context}\n\n**Answer:** Based on the retrieved documents above, here's what I found relevant to your question about '{query}'."
                 
                 # Store in memory
                 self.memory.add_message("user", query)
@@ -151,14 +157,14 @@ def initialize_rag_pipeline():
                 
                 return {
                     "response": response,
-                    "source_documents": retrieved_docs
+                    "source_documents": [doc["content"] for doc in retrieved_docs]
                 }
         
         # Initialize RAG chain
         rag_chain = LightweightRAGChain(retriever=retriever, memory=memory)
         st.session_state.rag_chain = rag_chain
-        st.session_state.status = "✓ RAG pipeline ready! (CPU-only mode)"
-        st.success("✅ RAG pipeline initialized! Using semantic retrieval with knowledge base.")
+        st.session_state.status = "✓ RAG pipeline ready! (Keyword-based retrieval)"
+        st.success("✅ RAG pipeline initialized! Ready to process queries.")
         
     except Exception as e:
         import traceback

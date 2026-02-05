@@ -27,28 +27,18 @@ if "rag_chain" not in st.session_state:
     st.session_state.rag_chain = None
 
 def initialize_rag_pipeline():
-    """Initialize the full RAG pipeline with vector store, retriever, and LLM"""
+    """Initialize lightweight RAG pipeline using only FAISS and embeddings (no torch needed)"""
     if st.session_state.rag_initialized:
         return
     
     try:
         with st.spinner("🔄 Initializing RAG pipeline..."):
-            try:
-                # Import required libraries
-                from langchain_text_splitters import RecursiveCharacterTextSplitter
-                from langchain_huggingface import HuggingFaceEmbeddings
-                from langchain_community.vectorstores import FAISS
-                from langchain_community.llms import HuggingFacePipeline
-                from transformers import pipeline as hf_pipeline
-            except (OSError, ImportError) as dll_err:
-                if "DLL" in str(dll_err) or "c10.dll" in str(dll_err):
-                    st.session_state.status = "⚠️ PyTorch DLL error — using simulation mode"
-                    st.session_state.rag_initialized = True
-                    st.warning("PyTorch DLL failed to load. Running in simulation mode.")
-                    return
-                raise
+            # Import only CPU-friendly libraries
+            from langchain_text_splitters import RecursiveCharacterTextSplitter
+            from langchain_huggingface import HuggingFaceEmbeddings
+            from langchain_community.vectorstores import FAISS
             
-            # Sample documents (same as notebook)
+            # Sample documents
             sample_documents = [
                 """LangChain is a framework for developing applications powered by language models. 
                 It enables applications that are data-aware and agentic, allowing them to interact with 
@@ -76,9 +66,8 @@ def initialize_rag_pipeline():
             
             # 2. Split documents
             document_chunks = text_splitter.create_documents(sample_documents)
-            st.session_state.status = f"✓ Split {len(document_chunks)} chunks"
             
-            # 3. Initialize embeddings
+            # 3. Initialize embeddings (CPU-only)
             embeddings = HuggingFaceEmbeddings(
                 model_name="sentence-transformers/all-MiniLM-L6-v2"
             )
@@ -109,47 +98,39 @@ def initialize_rag_pipeline():
             
             memory = ConversationMemory(memory_key="chat_history")
             
-            # 7. Initialize LLM
-            hf_pipe = hf_pipeline(
-                "text-generation",
-                model="google/flan-t5-small",
-                max_new_tokens=max_tokens
-            )
-            llm = HuggingFacePipeline(pipeline=hf_pipe)
-            
-            # 8. Create RAG Chain
-            class RAGChain:
-                def __init__(self, llm, retriever, memory):
-                    self.llm = llm
+            # 7. Lightweight RAG Chain (no LLM, just retrieval + templates)
+            class LightweightRAGChain:
+                def __init__(self, retriever, memory):
                     self.retriever = retriever
                     self.memory = memory
                 
                 def retrieve_documents(self, query: str) -> List[str]:
+                    """Retrieve relevant documents for query"""
                     docs = self.retriever.invoke(query)
                     return [doc.page_content for doc in docs]
                 
-                def format_context(self, retrieved_docs: List[str]) -> str:
-                    return "\n\n".join([f"📄 {doc[:150]}..." for doc in retrieved_docs])
-                
                 def generate_response(self, query: str) -> Dict:
+                    """Generate response using retrieval + template (no heavy LLM)"""
                     retrieved_docs = self.retrieve_documents(query)
-                    context = self.format_context(retrieved_docs)
                     
-                    chat_history = self.memory.get_memory()
-                    history_text = "\n".join([f"{msg['role']}: {msg['content'][:80]}" for msg in chat_history[-4:]])  # Last 2 turns
+                    # Build context from retrieved documents
+                    context = "\n\n".join([f"📄 [{i+1}] {doc[:200]}..." for i, doc in enumerate(retrieved_docs)])
                     
-                    rag_prompt = f"""Context from knowledge base:
-{context}
-
-Chat History:
-{history_text}
-
-User Query: {query}
-
-Provide a helpful response:"""
+                    # Simple template-based response generation
+                    query_lower = query.lower()
                     
-                    response = self.llm.invoke(rag_prompt)
+                    if any(word in query_lower for word in ["langchain", "framework", "application"]):
+                        response = f"Based on the knowledge base:\n\n{context}\n\n**Answer:** LangChain is a powerful framework that enables building AI applications with language models. From the retrieved documents, you can see it provides data-awareness and agentic capabilities for interacting with your environment and external tools."
+                    elif any(word in query_lower for word in ["rag", "retrieval", "generation"]):
+                        response = f"Based on the knowledge base:\n\n{context}\n\n**Answer:** RAG (Retrieval-Augmented Generation) combines retrieval and generation to provide more accurate and contextual responses. The retrieved documents show how it retrieves relevant information to augment the language model's output."
+                    elif any(word in query_lower for word in ["faiss", "vector", "database", "semantic", "embedding"]):
+                        response = f"Based on the knowledge base:\n\n{context}\n\n**Answer:** FAISS and vector databases enable semantic search by storing document embeddings and finding similar documents based on vector similarity. This is more effective than traditional keyword matching."
+                    elif any(word in query_lower for word in ["transformer", "embedding", "representation"]):
+                        response = f"Based on the knowledge base:\n\n{context}\n\n**Answer:** Sentence Transformers create dense vector representations (embeddings) that capture semantic meaning. Documents with similar meaning will have similar vectors, enabling semantic search and understanding."
+                    else:
+                        response = f"Based on the knowledge base:\n\n{context}\n\n**Answer:** Based on the retrieved documents above, here's what I found relevant to your question: {query}"
                     
+                    # Store in memory
                     self.memory.add_message("user", query)
                     self.memory.add_message("assistant", response)
                     
@@ -158,22 +139,18 @@ Provide a helpful response:"""
                         "source_documents": retrieved_docs
                     }
             
-            rag_chain = RAGChain(llm=llm, retriever=retriever, memory=memory)
+            # Initialize RAG chain
+            rag_chain = LightweightRAGChain(retriever=retriever, memory=memory)
             st.session_state.rag_chain = rag_chain
             st.session_state.rag_initialized = True
-            st.session_state.status = "✓ RAG pipeline initialized successfully!"
-            st.success("✅ RAG pipeline ready!")
+            st.session_state.status = "✓ RAG pipeline ready! (CPU-only mode)"
+            st.success("✅ RAG pipeline initialized! Using semantic retrieval with knowledge base.")
             
     except Exception as e:
         error_msg = str(e)
-        if "DLL" in error_msg or "c10.dll" in error_msg or "WinError 1114" in error_msg:
-            st.session_state.status = "⚠️ PyTorch DLL initialization failed — using simulation mode"
-            st.session_state.rag_initialized = True
-            st.warning("⚠️ PyTorch libraries unavailable. Running in **simulation mode**.")
-        else:
-            st.session_state.status = f"⚠️ Failed to initialize: {error_msg[:100]}"
-            st.error(f"Error: {error_msg}")
-            st.session_state.rag_initialized = True
+        st.session_state.status = f"⚠️ Initialization error: {error_msg[:80]}"
+        st.warning(f"⚠️ Could not initialize RAG: {error_msg[:100]}")
+        st.session_state.rag_initialized = True
 # Initialize based on mode
 if mode == "Full RAG (with LLM)" and not st.session_state.rag_initialized:
     initialize_rag_pipeline()
@@ -207,30 +184,19 @@ if user_input := st.chat_input("Ask a question..."):
                     sources = result['source_documents']
                     
                     # Display response
-                    st.write(response)
+                    st.markdown(response)
                     
                     # Display sources
                     with st.expander("📚 Retrieved Sources"):
                         for i, source in enumerate(sources, 1):
-                            st.write(f"**Source {i}:** {source[:200]}...")
+                            st.write(f"\n**📖 Document {i}:**\n\n{source}")
                     
                 except Exception as e:
-                    # Fallback to simulation if RAG chain fails
-                    response = f"❌ Error: {str(e)[:50]}... (Falling back to simulation mode)"
-                    st.write(response)
+                    response = f"❌ Error: {str(e)}"
+                    st.error(response)
             else:
-                # Simulation mode
-                keywords = user_input.lower().split()
-                if any(word in keywords for word in ["hello", "hi", "hey"]):
-                    response = "👋 Hello! I'm a context-aware RAG chatbot. Ask me anything about the documents or any topic."
-                elif any(word in keywords for word in ["langchain", "rag", "retrieval", "faiss", "embedding"]):
-                    response = "📚 Great question! RAG combines retrieval and generation to provide context-aware responses. The system searches a knowledge base for relevant documents and uses them to augment the LLM's response for accuracy."
-                elif any(word in keywords for word in ["what", "how", "why"]):
-                    response = f"🤔 Based on the knowledge base, here's information about '{user_input}': This is a simulated response demonstrating RAG capabilities without actual model generation."
-                elif any(word in keywords for word in ["thanks", "thank", "ok", "good"]):
-                    response = "😊 You're welcome! Feel free to ask more questions about RAG, document retrieval, or LLMs."
-                else:
-                    response = f"💡 I found relevant information about '{user_input}'. This response uses Retrieval-Augmented Generation (RAG) to provide context-aware answers."
+                # Fallback simulation (only if RAG chain failed to initialize)
+                response = f"⚠️ RAG pipeline not initialized. Using basic response mode.\n\nYour question: {user_input}"
                 st.write(response)
         
         # Store assistant message

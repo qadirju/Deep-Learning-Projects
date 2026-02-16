@@ -59,15 +59,39 @@ st.markdown("""
 def load_model():
     """Load the trained pipeline model."""
     try:
-        model_path = 'models/churn_pipeline.joblib'
-        if os.path.exists(model_path):
-            model = joblib.load(model_path)
-            return model
-        else:
-            st.error(f"Model not found at {model_path}")
-            return None
+        # Try multiple possible model paths
+        possible_paths = [
+            'models/churn_pipeline.joblib',
+            './models/churn_pipeline.joblib',
+            os.path.join(os.path.dirname(__file__), 'models', 'churn_pipeline.joblib'),
+            os.path.join(os.path.dirname(__file__), '..', 'models', 'churn_pipeline.joblib'),
+        ]
+        
+        for model_path in possible_paths:
+            if os.path.exists(model_path):
+                model = joblib.load(model_path)
+                st.info(f"✅ Model loaded successfully from: {model_path}")
+                return model
+        
+        # If no model found, show error with helpful info
+        st.warning("""
+        ⚠️ **Model file not found**
+        
+        The machine learning model file is not available. This could be because:
+        1. The model training notebook hasn't been executed yet
+        2. The GridSearchCV training is still in progress (15-60 minutes)
+        3. The model file path is incorrect
+        
+        **To fix this:**
+        - Run the notebook cells to train the model
+        - Or wait for GridSearchCV to complete
+        - The model should be saved at: `models/churn_pipeline.joblib`
+        """)
+        return None
+        
     except Exception as e:
-        st.error(f"Error loading model: {str(e)}")
+        st.error(f"❌ Error loading model: {str(e)}")
+        st.info("Please check that the model file exists and is not corrupted.")
         return None
 
 
@@ -85,8 +109,15 @@ def main():
     model = load_model()
     
     if model is None:
-        st.error("Failed to load the machine learning model. Please check the model file path.")
-        return
+        st.warning("""
+        ⚠️ **Cannot proceed without a model**
+        
+        Please:
+        1. Run the training notebook to train and save the model
+        2. Ensure the model file exists at: `models/churn_pipeline.joblib`
+        3. Then restart this Streamlit app
+        """)
+        st.stop()  # Stop execution here
     
     # Create tabs
     tab1, tab2, tab3 = st.tabs(["Single Prediction", "Batch Prediction", "About"])

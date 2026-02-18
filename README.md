@@ -47,11 +47,34 @@ Deep-Learning-Projects/
 │   ├── llm_fine_tuning (1).ipynb          # QLoRA implementation
 │   └── README.md                          # Project documentation
 │
-└── context-aware-chatbot-rag/             # RAG-powered conversational AI
-    ├── app.py                             # Streamlit web application
-    ├── ContextAware_RAG_Chatbot.ipynb    # Development notebook
+├── context-aware-chatbot-rag/             # RAG-powered conversational AI
+│   ├── app.py                             # Streamlit web application
+│   ├── ContextAware_RAG_Chatbot.ipynb    # Development notebook
+│   ├── README.md                          # Comprehensive documentation
+│   └── requirements.txt                   # Python dependencies
+│
+└── telco-customer-churn-ml-pipeline/      # ML pipeline for churn prediction
+    ├── app/
+    │   └── streamlit_app.py               # Interactive web application
+    ├── data/
+    │   ├── raw/
+    │   │   └── telco_churn_dataset.csv   # Original dataset
+    │   └── processed/                     # Preprocessed data
+    ├── models/
+    │   └── churn_pipeline.joblib          # Trained model
+    ├── notebooks/
+    │   └── 01_churn_pipeline_training.ipynb  # Training notebook
+    ├── src/
+    │   ├── data_preprocessing.py          # Data cleaning
+    │   ├── train_model.py                 # Model training
+    │   └── predict.py                     # Inference module
+    ├── reports/
+    │   └── model_evaluation.txt           # Performance metrics
     ├── README.md                          # Comprehensive documentation
-    └── requirements.txt                   # Python dependencies
+    ├── requirements.txt                   # Dependencies
+    ├── run_streamlit.py                   # App launcher
+    ├── STREAMLIT_GUIDE.md                 # Web app guide
+    └── LICENSE                            # MIT License
 ```
 
 ---
@@ -370,6 +393,193 @@ Bot: "Based on the knowledge base:
 
 ---
 
+### 4. 📊 **Telco Customer Churn ML Pipeline**
+
+**Purpose:** Production-ready machine learning pipeline for predicting customer churn in telecommunications  
+**Location:** `telco-customer-churn-ml-pipeline/`
+
+#### Overview:
+- Build end-to-end ML pipeline for churn prediction
+- Implement automated data preprocessing and feature engineering
+- Train and optimize multiple machine learning models
+- Deploy interactive web application for real-time predictions
+- Process batch predictions from CSV files
+
+#### Key Features:
+- ✅ 🔄 Automated data preprocessing pipeline
+- ✅ 🤖 Multiple ML models with hyperparameter tuning (Logistic Regression, Random Forest)
+- ✅ 🎯 GridSearchCV for optimal model selection
+- ✅ 🌐 Interactive Streamlit web application
+- ✅ 📊 Single and batch prediction capabilities
+- ✅ 📈 Comprehensive model evaluation and metrics
+- ✅ 🚀 Production-ready serialized models
+- ✅ 📚 Complete documentation and guides
+
+#### Project Problem Statement:
+Customer churn is a critical business challenge for telecom companies. By predicting which customers are at risk of leaving, companies can implement targeted retention strategies to reduce revenue loss and improve customer lifetime value.
+
+#### Technical Architecture:
+```
+Raw Data (telco_churn_dataset.csv)
+        ↓
+[Data Preprocessing Pipeline]
+├── Handle Missing Values
+├── Feature Engineering
+├── Categorical Encoding (One-Hot)
+├── Feature Scaling (StandardScaler)
+        ↓
+[Train-Test Split] (80-20)
+        ↓
+[Model Training & Tuning]
+├── Logistic Regression
+└── Random Forest Classifier
+├── GridSearchCV Optimization
+        ↓
+[Model Evaluation]
+├── Accuracy, Precision, Recall
+├── F1-Score, ROC-AUC
+├── Confusion Matrix
+        ↓
+[Production Deployment]
+├── Serialized Model (joblib)
+├── Streamlit Web App
+└── Batch Prediction Engine
+```
+
+#### Dataset Information:
+| Aspect | Details |
+|--------|----------|
+| **Records** | 7,000+ customers |
+| **Features** | 20+ attributes |
+| **Target** | Binary (Churned/Not Churned) |
+| **Demographics** | Age, Gender, Location |
+| **Services** | Internet, Phone, Streaming, Support |
+| **Account Info** | Tenure, Contract, Charges |
+
+#### Key Features Used:
+- **Demographics**: Senior Citizen, Gender
+- **Services**: Internet Service, Phone Service, Online Security, Device Protection
+- **Support**: Tech Support, Online Backup, Device Support
+- **Account**: Contract Type, Tenure (months), Monthly Charges, Total Charges
+
+#### Model Performance:
+| Metric | Score |
+|--------|-------|
+| **Accuracy** | ~80%+ |
+| **Precision** | ~65%+ |
+| **Recall** | ~55%+ |
+| **F1-Score** | ~60%+ |
+| **ROC-AUC** | ~0.85+ |
+
+#### Streamlit Web Application:
+The application features three main tabs:
+
+**Tab 1: Single Prediction**
+- Interactive form for customer information input
+- Real-time churn probability prediction
+- Recommended retention actions
+- Visual probability score display
+
+**Tab 2: Batch Prediction**
+- Upload CSV files with multiple customer records
+- Process all customers simultaneously
+- Download results as CSV for analysis
+- Bulk prediction capabilities
+
+**Tab 3: About**
+- Model information and architecture details
+- Feature importance overview
+- Methodology explanation
+- Performance metrics summary
+
+#### Tech Stack:
+| Component | Technology |
+|-----------|------------|
+| **ML Framework** | scikit-learn |
+| **Data Processing** | pandas, numpy |
+| **Model Training** | GridSearchCV, Pipeline |
+| **Serialization** | joblib |
+| **Web Interface** | Streamlit |
+| **Notebooks** | Jupyter |
+
+#### Files Overview:
+- `src/data_preprocessing.py` - Data loading, cleaning, and feature engineering
+- `src/train_model.py` - Model creation, training, and hyperparameter tuning
+- `src/predict.py` - Inference and batch prediction
+- `app/streamlit_app.py` - Interactive web application (Single & Batch prediction)
+- `notebooks/01_churn_pipeline_training.ipynb` - Complete training notebook
+- `run_streamlit.py` - Application launcher with auto-dependency installation
+
+#### Quick Start:
+```bash
+cd telco-customer-churn-ml-pipeline
+
+# Option 1: Using launcher (recommended)
+python run_streamlit.py
+
+# Option 2: Direct Streamlit command
+streamlit run app/streamlit_app.py
+
+# Option 3: Run training notebook
+jupyter notebook notebooks/01_churn_pipeline_training.ipynb
+```
+
+#### Example Workflow:
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Train the model (optional, takes 30-60 minutes)
+jupyter notebook notebooks/01_churn_pipeline_training.ipynb
+
+# 3. Run the web app
+python run_streamlit.py
+
+# 4. Access at http://localhost:8501
+```
+
+#### Real-World Application:
+```
+Customer: John, 60 years old, 24 months tenure
+Services: Internet (Fiber optic), Phone, No extras
+Charges: $89.90/month, $2,157.55 total
+
+Model Prediction:
+🔴 HIGH RISK (85% Churn Probability)
+
+Recommended Actions:
+1. Offer loyalty discount (10-15%)
+2. Upgrade to premium plan
+3. Add tech support package
+4. Schedule retention call
+5. Personalized retention offer
+```
+
+#### Feature Importance Example:
+The model identifies these as top churn indicators:
+1. Contract Type (Month-to-month = high risk)
+2. Tenure (Low tenure = high risk)
+3. Internet Service Type
+4. Tech Support (Missing = high risk)
+5. Monthly Charges (High charges = higher risk)
+
+#### Learning Outcomes:
+After exploring this project, you'll understand:
+- 🔄 End-to-end ML pipeline development
+- 🧹 Data preprocessing and feature engineering
+- 🤖 Model training and hyperparameter optimization
+- 📊 Comprehensive model evaluation techniques
+- 🌐 Deploying ML models with Streamlit
+- 📁 Production-ready project structure
+- 📈 Real-world business problem solving
+
+#### Additional Resources:
+- [Project README](telco-customer-churn-ml-pipeline/README.md) - Detailed documentation
+- [Streamlit Guide](telco-customer-churn-ml-pipeline/STREAMLIT_GUIDE.md) - Web app setup
+- [Training Notebook](telco-customer-churn-ml-pipeline/notebooks/01_churn_pipeline_training.ipynb) - In-depth analysis
+
+---
+
 ## 🛠️ Installation & Setup
 
 ### Prerequisites
@@ -510,6 +720,7 @@ jupyter notebook llm_fine_tuning.ipynb
 | **CNN Classification** | Computer Vision | TensorFlow | Beginner | 2-3 hrs |
 | **LoRA/QLoRA** | NLP/LLM | PyTorch | Intermediate | 3-4 hrs |
 | **RAG Chatbot** | NLP/Production | LangChain | Intermediate | 2-3 hrs |
+| **Telco Churn Pipeline** | ML/Predictive Analytics | scikit-learn | Intermediate | 2-3 hrs |
 
 ---
 

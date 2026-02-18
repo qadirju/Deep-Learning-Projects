@@ -1,0 +1,46 @@
+MIT License
+
+Copyright (c) 2026 Qadir Jumani
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+
+PROJECT: Telco Customer Churn ML Pipeline
+AUTHOR: Qadir Jumani
+DATE: February 2026
+
+DESCRIPTION:
+A comprehensive machine learning pipeline for predicting customer churn in
+telecommunications. Includes data preprocessing, model training with
+hyperparameter tuning, and an interactive Streamlit web application.
+
+================================================================================
+
+USAGE:
+This software is provided as-is for educational and commercial purposes.
+You are free to use, modify, and distribute this software under the terms
+of the MIT License.
+
+ACKNOWLEDGMENTS:
+- Dataset: Kaggle Telco Customer Churn Dataset
+- Libraries: scikit-learn, pandas, streamlit, jupyter
+- Community: Open-source ML/AI community
+
+================================================================================

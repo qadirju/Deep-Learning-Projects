@@ -40,16 +40,42 @@ st.markdown("""
         padding-bottom: 0.5rem;
     }
     .prediction-high {
-        background-color: #ffebee;
-        padding: 1rem;
+        background-color: #ffcdd2;
+        padding: 1.5rem;
         border-radius: 0.5rem;
-        border-left: 4px solid #f44336;
+        border-left: 5px solid #c62828;
+        color: #000;
+    }
+    .prediction-high h3 {
+        color: #c62828 !important;
+        margin: 0.5rem 0;
+    }
+    .prediction-high p {
+        color: #000 !important;
+        margin: 0.3rem 0;
+        font-weight: 500;
     }
     .prediction-low {
-        background-color: #e8f5e9;
+        background-color: #c8e6c9;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        border-left: 5px solid #2e7d32;
+        color: #000;
+    }
+    .prediction-low h3 {
+        color: #2e7d32 !important;
+        margin: 0.5rem 0;
+    }
+    .prediction-low p {
+        color: #000 !important;
+        margin: 0.3rem 0;
+        font-weight: 500;
+    }
+    .metric-box {
+        background-color: #f5f5f5;
         padding: 1rem;
         border-radius: 0.5rem;
-        border-left: 4px solid #4caf50;
+        text-align: center;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -208,31 +234,40 @@ def main():
                 # Display results
                 st.divider()
                 
-                col_result1, col_result2 = st.columns(2)
-                
-                with col_result1:
+                # Main prediction result - uses better spacing
+                with st.container():
                     if prediction == 'Yes':
                         st.markdown(f"""
                         <div class="prediction-high">
                         <h3>⚠️ CHURN PREDICTION: YES</h3>
-                        <p><strong>Risk Level: HIGH</strong></p>
+                        <p>Risk Level: <strong>HIGH</strong></p>
                         <p>This customer is likely to churn.</p>
                         </div>
                         """, unsafe_allow_html=True)
-                        st.metric("Churn Probability", f"{prob_yes:.2%}")
                     else:
                         st.markdown(f"""
                         <div class="prediction-low">
                         <h3>✅ CHURN PREDICTION: NO</h3>
-                        <p><strong>Risk Level: LOW</strong></p>
+                        <p>Risk Level: <strong>LOW</strong></p>
                         <p>This customer is likely to stay.</p>
                         </div>
                         """, unsafe_allow_html=True)
-                        st.metric("Churn Probability", f"{prob_yes:.2%}")
                 
-                with col_result2:
-                    st.metric("Probability (No Churn)", f"{prob_no:.2%}")
-                    st.metric("Probability (Churn)", f"{prob_yes:.2%}")
+                # Add space
+                st.write("")
+                
+                # Display probabilities in a clear format
+                col_prob1, col_prob2, col_prob3 = st.columns(3)
+                
+                with col_prob1:
+                    st.metric("No Churn", f"{prob_no:.2%}")
+                
+                with col_prob2:
+                    st.metric("Churn", f"{prob_yes:.2%}")
+                
+                with col_prob3:
+                    risk_level = "HIGH 🔴" if prediction == 'Yes' else "LOW 🟢"
+                    st.metric("Risk Level", risk_level)
                 
                 # Recommendations
                 st.divider()
